@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { OrderService } from '../order.service';
 import { Order, ORDER_STATUSES, OrderStatus } from '../order.model';
 import { StatusBadge } from '../shared/status-badge';
+import { statusLabel } from '../shared/status-labels';
 
 @Component({
   selector: 'app-order-list',
@@ -16,6 +17,7 @@ export class OrderList implements OnInit {
   private readonly orders$ = inject(OrderService);
 
   readonly statuses = ORDER_STATUSES;
+  readonly statusLabel = statusLabel;
   readonly status = signal<OrderStatus | ''>('');
   readonly search = signal('');
 

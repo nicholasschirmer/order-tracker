@@ -242,6 +242,41 @@ test.describe('status tracking', () => {
     await screenshot(page, '10-order-detail-delivered');
   });
 
+  test('S23 a shipped order can be marked lost in transit, which is terminal', async ({ page, request }) => {
+    const order = await createOrderViaApi(request, { clientReference: uniqueRef('S23'), customerName: 'Acme Ltd', lines: ACME_LINES });
+    await setStatusViaApi(request, order.id, 'Approved');
+    await page.goto(`/orders/${order.id}`);
+
+    // Not available before shipping.
+    await expect(page.getByTestId('transition-LostInTransit')).toHaveCount(0);
+    await page.getByTestId('transition-Shipped').click();
+    await expect(page.getByTestId('status-badge').first()).toHaveText('Shipped');
+    await expect(page.getByTestId('transition-Delivered')).toHaveText('Mark delivered');
+    await expect(page.getByTestId('transition-LostInTransit')).toHaveText('Mark lost in transit');
+    await screenshot(page, '12-order-detail-shipped');
+
+    await page.getByTestId('transition-LostInTransit').click();
+
+    await expect(page.getByTestId('status-badge').first()).toHaveText('Lost in transit');
+    await expect(page.getByTestId('notice')).toContainText('Status changed to Lost in transit.');
+    await expect(page.getByTestId('terminal-note')).toContainText(/lost in transit/i);
+    await expect(page.locator('[data-testid^="transition-"]')).toHaveCount(0);
+    const points = page.getByTestId('timeline-point');
+    await expect(points).toHaveText([/Submitted/, /Approved/, /Shipped/, /Lost in transit/]);
+    await expect(points.nth(3)).toHaveAttribute('data-state', 'current');
+    await expect(page.getByText('Pending')).toHaveCount(0);
+    await screenshot(page, '13-order-detail-lost-in-transit');
+
+    const fetched = await (await request.get(`/api/orders/${order.id}`)).json();
+    expect(fetched.status).toBe('LostInTransit');
+    expect(fetched.allowedTransitions).toEqual([]);
+
+    // The list filter knows the new status too.
+    await page.goto('/orders');
+    await page.getByTestId('status-filter').selectOption('LostInTransit');
+    await expect(page.getByTestId('order-row').filter({ hasText: order.clientReference })).toHaveCount(1);
+  });
+
   test('S17 cancelling a submitted order is terminal', async ({ page, request }) => {
     const order = await createOrderViaApi(request, { clientReference: uniqueRef('S17'), customerName: 'Acme Ltd', lines: ACME_LINES });
     await page.goto(`/orders/${order.id}`);

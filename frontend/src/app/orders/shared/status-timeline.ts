@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { Order, OrderStatus } from '../order.model';
+import { statusLabel } from './status-labels';
 
 export type TimelineState = 'done' | 'current' | 'upcoming';
 
@@ -28,7 +29,7 @@ const HAPPY_PATH: readonly OrderStatus[] = ['Submitted', 'Approved', 'Shipped', 
             [attr.aria-current]="p.state === 'current' ? 'step' : null">
           <span class="marker" aria-hidden="true"></span>
           <div class="body">
-            <span class="label">{{ p.status }}</span>
+            <span class="label">{{ label(p.status) }}</span>
             @if (p.at) {
               <time class="when" [attr.datetime]="p.at">{{ p.at | date: 'd MMM y, HH:mm' }}</time>
             } @else {
@@ -66,21 +67,25 @@ const HAPPY_PATH: readonly OrderStatus[] = ['Submitted', 'Approved', 'Shipped', 
     .point[data-state='current'] .marker::after {
       content: ''; position: absolute; inset: 0.2rem; border-radius: 50%; background: var(--accent);
     }
-    .point[data-state='current'][data-status='Cancelled'] .marker { border-color: var(--danger); box-shadow: 0 0 0 4px rgba(185, 28, 28, 0.15); }
-    .point[data-state='current'][data-status='Cancelled'] .marker::after { background: var(--danger); }
+    .point[data-state='current'][data-status='Cancelled'] .marker,
+    .point[data-state='current'][data-status='LostInTransit'] .marker { border-color: var(--danger); box-shadow: 0 0 0 4px rgba(185, 28, 28, 0.15); }
+    .point[data-state='current'][data-status='Cancelled'] .marker::after,
+    .point[data-state='current'][data-status='LostInTransit'] .marker::after { background: var(--danger); }
     .point[data-state='current'][data-status='Delivered'] .marker { border-color: var(--success-fg); box-shadow: 0 0 0 4px rgba(22, 101, 52, 0.15); }
     .point[data-state='current'][data-status='Delivered'] .marker::after { background: var(--success-fg); }
     .body { display: flex; flex-direction: column; line-height: 1.3; min-width: 0; }
     .label { font-weight: 600; }
     .point[data-state='upcoming'] .label { color: var(--muted); font-weight: 500; }
     .point[data-state='current'] .label { color: var(--accent); }
-    .point[data-state='current'][data-status='Cancelled'] .label { color: var(--danger); }
+    .point[data-state='current'][data-status='Cancelled'] .label,
+    .point[data-state='current'][data-status='LostInTransit'] .label { color: var(--danger); }
     .point[data-state='current'][data-status='Delivered'] .label { color: var(--success-fg); }
     .when { font-size: 0.82rem; color: var(--muted); font-variant-numeric: tabular-nums; }
   `,
 })
 export class StatusTimeline {
   readonly order = input.required<Order>();
+  readonly label = statusLabel;
 
   readonly points = computed<TimelinePoint[]>(() => {
     const order = this.order();

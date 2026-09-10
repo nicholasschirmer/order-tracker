@@ -1,10 +1,11 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { OrderStatus } from '../order.model';
+import { statusLabel } from './status-labels';
 
 @Component({
   selector: 'app-status-badge',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<span class="badge" data-testid="status-badge" [attr.data-status]="status()">{{ status() }}</span>`,
+  template: `<span class="badge" data-testid="status-badge" [attr.data-status]="status()">{{ label() }}</span>`,
   styles: `
     .badge {
       display: inline-block;
@@ -22,8 +23,10 @@ import { OrderStatus } from '../order.model';
     .badge[data-status='Shipped'] { --badge-bg: #fef3c7; --badge-fg: #92400e; }
     .badge[data-status='Delivered'] { --badge-bg: #dcfce7; --badge-fg: #166534; }
     .badge[data-status='Cancelled'] { --badge-bg: #f3f4f6; --badge-fg: #6b7280; text-decoration: line-through; }
+    .badge[data-status='LostInTransit'] { --badge-bg: #fee2e2; --badge-fg: #991b1b; }
   `,
 })
 export class StatusBadge {
   readonly status = input.required<OrderStatus>();
+  readonly label = computed(() => statusLabel(this.status()));
 }

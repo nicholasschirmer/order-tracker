@@ -46,7 +46,7 @@ Logs and pid files live in `.dev/` (git-ignored). Ports can be overridden with `
 
 ```bash
 cd backend
-dotnet test          # 80 tests: domain rules, HTTP scenarios S01–S22, duplicate-prevention unit tests, data seeder
+dotnet test          # 92 tests: domain rules, HTTP scenarios S01–S23, duplicate-prevention unit tests, data seeder
 dotnet run --project src/OrderTracker.Api   # http://localhost:5080, creates orders.db on first run
 ```
 
@@ -64,7 +64,7 @@ curl -s localhost:5080/api/orders
 | POST | `/api/orders` | 201 new · 200 idempotent replay · 400 validation · 409 same reference, different details |
 | GET | `/api/orders?status=&search=` | newest first |
 | GET | `/api/orders/{id}` | 404 if unknown |
-| PATCH | `/api/orders/{id}/status` | `{"status":"Approved"}` · 422 illegal transition |
+| PATCH | `/api/orders/{id}/status` | `{"status":"Approved"}` · 422 illegal transition. Workflow: Submitted → Approved → Shipped → Delivered; Cancelled from Submitted/Approved; LostInTransit from Shipped |
 | GET | `/health` | `Healthy` |
 
 Backend layout: `Domain/` (Order aggregate, state machine, status history), `Data/` (EF Core SQLite
@@ -107,7 +107,7 @@ commands with the right one (e.g. `PATH=/usr/bin:$PATH`).
 ```bash
 cd frontend
 npm install
-npm run test:ci      # 40 Vitest specs: OrderService + OrderList + NewOrder + OrderDetail (incl. timeline) + routes
+npm run test:ci      # 44 Vitest specs: OrderService + OrderList + NewOrder + OrderDetail (incl. timeline) + badge + routes
 npm start            # http://localhost:4200, proxies /api → http://localhost:5080 (start the backend first)
 ```
 
@@ -132,8 +132,8 @@ npm run e2e                       # boots the API on :5080 with a fresh SQLite d
 npm run e2e:report                # open the HTML report
 ```
 
-19 tests in `frontend/e2e/` drive the real stack through a headless Chromium browser and cover
-S01–S03, S06, S09–S15, S17, S20 and the layout scenario S21. They run in one worker, in file order,
+20 tests in `frontend/e2e/` drive the real stack through a headless Chromium browser and cover
+S01–S03, S06, S09–S15, S17, S20, S22, S23 and the layout scenario S21. They run in one worker, in file order,
 so `01-empty-state.spec.ts` always sees an empty database.
 
 Screenshots are written to `frontend/e2e/screenshots/` on every run and are the formatting review
@@ -148,7 +148,7 @@ artefact:
 | `05-new-order-conflict.png` | Same reference, different details — red banner with link to existing order |
 | `06-new-order-validation.png` | Inline validation errors, submit disabled |
 | `07-orders-list.png`, `08-orders-list-filtered.png` | List, newest first; filtered to Approved |
-| `09`–`11-order-detail-*.png` | Approved, Delivered (terminal) and Cancelled states |
+| `09`–`13-order-detail-*.png` | Approved, Delivered, Cancelled, Shipped (with "Mark lost in transit") and Lost in transit states |
 | `layout-{list,new-order-errors,detail}-{desktop,mobile}.png` | S21 layout checks at 1280×800 and 390×844 |
 
 The layout spec also asserts that no page scrolls sideways, that every list row (including the
@@ -184,6 +184,6 @@ Because the browser only ever talks to nginx, no CORS configuration is needed in
 ## Status
 
 - [x] Phase 1 — Design docs
-- [x] Phase 2 — Backend (TDD) — 80 tests green
-- [x] Phase 3 — Frontend (TDD) — 40 tests green
-- [x] Phase 4 — Playwright e2e + screenshots — 19 tests green, screenshots reviewed at desktop and mobile widths
+- [x] Phase 2 — Backend (TDD) — 92 tests green
+- [x] Phase 3 — Frontend (TDD) — 44 tests green
+- [x] Phase 4 — Playwright e2e + screenshots — 20 tests green, screenshots reviewed at desktop and mobile widths

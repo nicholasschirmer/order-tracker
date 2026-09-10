@@ -35,8 +35,8 @@ public static class DataSeeder
     // Roughly how a real backlog looks: most orders finished, a healthy in-progress tail.
     private static readonly (OrderStatus Status, int Weight)[] StatusMix =
     [
-        (OrderStatus.Submitted, 22), (OrderStatus.Approved, 18), (OrderStatus.Shipped, 15),
-        (OrderStatus.Delivered, 35), (OrderStatus.Cancelled, 10),
+        (OrderStatus.Submitted, 22), (OrderStatus.Approved, 18), (OrderStatus.Shipped, 14),
+        (OrderStatus.Delivered, 34), (OrderStatus.Cancelled, 9), (OrderStatus.LostInTransit, 3),
     ];
 
     private const int HistoryDays = 90;
@@ -136,6 +136,7 @@ public static class DataSeeder
         OrderStatus.Shipped => [OrderStatus.Approved, OrderStatus.Shipped],
         OrderStatus.Delivered => [OrderStatus.Approved, OrderStatus.Shipped, OrderStatus.Delivered],
         OrderStatus.Cancelled => rng.Next(2) == 0 ? [OrderStatus.Cancelled] : [OrderStatus.Approved, OrderStatus.Cancelled],
+        OrderStatus.LostInTransit => [OrderStatus.Approved, OrderStatus.Shipped, OrderStatus.LostInTransit],
         _ => [],
     };
 }

@@ -97,8 +97,10 @@ stateDiagram-v2
     Approved --> Shipped
     Approved --> Cancelled
     Shipped --> Delivered
+    Shipped --> LostInTransit
     Delivered --> [*]
     Cancelled --> [*]
+    LostInTransit --> [*]
 ```
 
 Transitions are enforced in the domain model (`Order.TransitionTo`). Illegal transitions

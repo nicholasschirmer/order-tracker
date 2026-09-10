@@ -380,6 +380,53 @@ public sealed class OrdersApiTests : IDisposable
     }
 
     [Fact]
+    public async Task S23_Shipped_order_can_be_marked_LostInTransit_and_becomes_terminal()
+    {
+        var created = await CreateOrder(Acme());
+        await PatchStatus(created.Id, "Approved");
+        var shipped = (await (await PatchStatus(created.Id, "Shipped")).Content.ReadFromJsonAsync<OrderResponse>())!;
+        Assert.Equal(["Delivered", "LostInTransit"], shipped.AllowedTransitions);
+
+        var response = await PatchStatus(created.Id, "LostInTransit");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var lost = await response.Content.ReadFromJsonAsync<OrderResponse>();
+        Assert.Equal("LostInTransit", lost!.Status);
+        Assert.Empty(lost.AllowedTransitions);
+        Assert.Equal(["Submitted", "Approved", "Shipped", "LostInTransit"], lost.StatusHistory.Select(h => h.Status));
+
+        foreach (var target in new[] { "Shipped", "Delivered", "Cancelled", "Submitted" })
+        {
+            Assert.Equal(HttpStatusCode.UnprocessableEntity, (await PatchStatus(created.Id, target)).StatusCode);
+        }
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("Approved")]
+    public async Task S23_LostInTransit_is_rejected_before_shipping(string steps)
+    {
+        var created = await CreateOrder(Acme());
+        foreach (var step in steps.Split(',', StringSplitOptions.RemoveEmptyEntries)) await PatchStatus(created.Id, step);
+
+        var response = await PatchStatus(created.Id, "LostInTransit");
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task S23_List_can_filter_LostInTransit()
+    {
+        var a = await CreateOrder(Acme("PO-1"));
+        await CreateOrder(Acme("PO-2"));
+        foreach (var step in new[] { "Approved", "Shipped", "LostInTransit" }) await PatchStatus(a.Id, step);
+
+        var lost = await _client.GetFromJsonAsync<List<OrderResponse>>("/api/orders?status=lostintransit");
+
+        Assert.Equal([a.Id], lost!.Select(o => o.Id));
+    }
+
+    [Fact]
     public async Task S18_Unknown_status_value_returns_400()
     {
         var created = await CreateOrder(Acme());
