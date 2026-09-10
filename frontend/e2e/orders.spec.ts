@@ -247,7 +247,8 @@ test.describe('status tracking', () => {
     await setStatusViaApi(request, order.id, 'Approved');
     await page.goto(`/orders/${order.id}`);
 
-    // Not available before shipping.
+    // Not available before shipping (wait for the page to render its buttons before counting).
+    await expect(page.getByTestId('transition-Shipped')).toBeVisible();
     await expect(page.getByTestId('transition-LostInTransit')).toHaveCount(0);
     await page.getByTestId('transition-Shipped').click();
     await expect(page.getByTestId('status-badge').first()).toHaveText('Shipped');

@@ -332,6 +332,7 @@ public sealed class OrdersApiTests : IDisposable
     [InlineData("Shipped")]
     [InlineData("Delivered")]
     [InlineData("Submitted")]
+    [InlineData("LostInTransit")]
     public async Task S16_Illegal_transition_from_Submitted_returns_422_and_leaves_order_unchanged(string target)
     {
         var created = await CreateOrder(Acme());
@@ -384,6 +385,8 @@ public sealed class OrdersApiTests : IDisposable
     {
         var created = await CreateOrder(Acme());
         await PatchStatus(created.Id, "Approved");
+        // Only a shipped order can go missing.
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, (await PatchStatus(created.Id, "LostInTransit")).StatusCode);
         var shipped = (await (await PatchStatus(created.Id, "Shipped")).Content.ReadFromJsonAsync<OrderResponse>())!;
         Assert.Equal(["Delivered", "LostInTransit"], shipped.AllowedTransitions);
 
@@ -399,19 +402,6 @@ public sealed class OrdersApiTests : IDisposable
         {
             Assert.Equal(HttpStatusCode.UnprocessableEntity, (await PatchStatus(created.Id, target)).StatusCode);
         }
-    }
-
-    [Theory]
-    [InlineData("")]
-    [InlineData("Approved")]
-    public async Task S23_LostInTransit_is_rejected_before_shipping(string steps)
-    {
-        var created = await CreateOrder(Acme());
-        foreach (var step in steps.Split(',', StringSplitOptions.RemoveEmptyEntries)) await PatchStatus(created.Id, step);
-
-        var response = await PatchStatus(created.Id, "LostInTransit");
-
-        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
     }
 
     [Fact]

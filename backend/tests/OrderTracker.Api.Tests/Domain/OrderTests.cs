@@ -188,24 +188,23 @@ public class OrderTests
         Assert.Single(order.StatusHistory);
     }
 
-    /// <summary>Walks the order along the happy path until it reaches <paramref name="target"/>.</summary>
+    /// <summary>The legal route from <c>Submitted</c> to each status, used to put an order into a given state.</summary>
+    private static readonly Dictionary<OrderStatus, OrderStatus[]> PathTo = new()
+    {
+        [OrderStatus.Submitted] = [],
+        [OrderStatus.Approved] = [OrderStatus.Approved],
+        [OrderStatus.Shipped] = [OrderStatus.Approved, OrderStatus.Shipped],
+        [OrderStatus.Delivered] = [OrderStatus.Approved, OrderStatus.Shipped, OrderStatus.Delivered],
+        [OrderStatus.Cancelled] = [OrderStatus.Cancelled],
+        [OrderStatus.LostInTransit] = [OrderStatus.Approved, OrderStatus.Shipped, OrderStatus.LostInTransit],
+    };
+
+    /// <summary>Walks the order along its legal route until it reaches <paramref name="target"/>, skipping steps already taken.</summary>
     private static void Advance(Order order, OrderStatus target)
     {
-        var path = new[] { OrderStatus.Submitted, OrderStatus.Approved, OrderStatus.Shipped, OrderStatus.Delivered };
-        if (target == OrderStatus.Cancelled)
+        var visited = order.StatusHistory.Select(h => h.Status).ToHashSet();
+        foreach (var step in PathTo[target].Where(s => !visited.Contains(s)))
         {
-            order.TransitionTo(OrderStatus.Cancelled, T0);
-            return;
-        }
-        if (target == OrderStatus.LostInTransit)
-        {
-            Advance(order, OrderStatus.Shipped);
-            order.TransitionTo(OrderStatus.LostInTransit, T0);
-            return;
-        }
-        foreach (var step in path.SkipWhile(s => s != order.Status).Skip(1))
-        {
-            if (order.Status == target) break;
             order.TransitionTo(step, T0);
         }
     }

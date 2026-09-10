@@ -11,7 +11,7 @@ export const STATUS_LABELS: Record<OrderStatus, string> = {
 };
 
 export function statusLabel(status: OrderStatus): string {
-  return STATUS_LABELS[status] ?? status;
+  return STATUS_LABELS[status];
 }
 
 /** Verb shown on the button that moves an order into the given status. */

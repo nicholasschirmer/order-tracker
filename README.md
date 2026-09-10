@@ -46,7 +46,7 @@ Logs and pid files live in `.dev/` (git-ignored). Ports can be overridden with `
 
 ```bash
 cd backend
-dotnet test          # 92 tests: domain rules, HTTP scenarios S01–S23, duplicate-prevention unit tests, data seeder
+dotnet test          # 91 tests: domain rules, HTTP scenarios S01–S23, duplicate-prevention unit tests, data seeder
 dotnet run --project src/OrderTracker.Api   # http://localhost:5080, creates orders.db on first run
 ```
 
@@ -89,8 +89,8 @@ they prove (e.g. `S02_Resubmitting_identical_order_returns_200_replay_of_origina
 
 `DataSeeder` (in `Data/`) generates orders through the real domain model: 28 customers, a
 30-item catalogue with ±10 % negotiated prices, 1–5 lines per order, statuses reached through
-legal transitions (roughly 22 % Submitted, 18 % Approved, 15 % Shipped, 35 % Delivered,
-10 % Cancelled) and creation times spread over the last 90 days. References are
+legal transitions (roughly 22 % Submitted, 18 % Approved, 14 % Shipped, 34 % Delivered,
+9 % Cancelled, 3 % LostInTransit) and creation times spread over the last 90 days. References are
 `PO-<year>-0001…`; re-running skips references that already exist, and the output is
 deterministic for a given random seed. It has its own tests in `tests/.../Data/DataSeederTests.cs`.
 Screenshots of the UI with 500 seeded orders are in [docs/screenshots/](docs/screenshots/).
@@ -184,6 +184,6 @@ Because the browser only ever talks to nginx, no CORS configuration is needed in
 ## Status
 
 - [x] Phase 1 — Design docs
-- [x] Phase 2 — Backend (TDD) — 92 tests green
+- [x] Phase 2 — Backend (TDD) — 91 tests green
 - [x] Phase 3 — Frontend (TDD) — 44 tests green
 - [x] Phase 4 — Playwright e2e + screenshots — 20 tests green, screenshots reviewed at desktop and mobile widths
