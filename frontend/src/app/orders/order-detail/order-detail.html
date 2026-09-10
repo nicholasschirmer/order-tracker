@@ -82,7 +82,7 @@
             }
           </div>
         } @else {
-          <p class="muted" data-testid="terminal-note">This order is {{ o.status.toLowerCase() }}; no further changes are possible.</p>
+          <p class="muted" data-testid="terminal-note">This order is {{ statusLabel(o.status).toLowerCase() }}; no further changes are possible.</p>
         }
       </aside>
     </div>

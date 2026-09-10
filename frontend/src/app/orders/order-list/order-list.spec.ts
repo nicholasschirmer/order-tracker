@@ -80,7 +80,10 @@ describe('OrderList', () => {
       'Shipped',
       'Delivered',
       'Cancelled',
+      'LostInTransit',
     ]);
+    // Human-readable option text for the multi-word status.
+    expect(Array.from(select.options).at(-1)?.textContent?.trim()).toBe('Lost in transit');
 
     select.value = 'Approved';
     select.dispatchEvent(new Event('change'));

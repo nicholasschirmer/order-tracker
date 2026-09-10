@@ -22,7 +22,7 @@
       <select data-testid="status-filter" [value]="status()" (change)="onStatusChange($any($event.target).value)">
         <option value="">All statuses</option>
         @for (s of statuses; track s) {
-          <option [value]="s">{{ s }}</option>
+          <option [value]="s">{{ statusLabel(s) }}</option>
         }
       </select>
     </label>

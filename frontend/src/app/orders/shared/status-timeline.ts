@@ -1,8 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { Order, OrderStatus } from '../order.model';
+import { DESTRUCTIVE_STATUSES, statusLabel } from './status-labels';
 
 export type TimelineState = 'done' | 'current' | 'upcoming';
+
+/** Colour treatment of the current point: red for unhappy endings, green for delivered. */
+export type TimelineTone = 'danger' | 'success' | null;
 
 export interface TimelinePoint {
   status: OrderStatus;
@@ -10,12 +14,17 @@ export interface TimelinePoint {
   state: TimelineState;
 }
 
+function toneOf(status: OrderStatus): TimelineTone {
+  if (DESTRUCTIVE_STATUSES.includes(status)) return 'danger';
+  return status === 'Delivered' ? 'success' : null;
+}
+
 const HAPPY_PATH: readonly OrderStatus[] = ['Submitted', 'Approved', 'Shipped', 'Delivered'];
 
 /**
  * Vertical timeline of an order's status history: every status it has been in (with a timestamp),
- * the current one highlighted, followed by the steps still ahead on the normal path. A cancelled
- * or delivered order has nothing ahead of it.
+ * the current one highlighted, followed by the steps still ahead on the normal path. A terminal
+ * order (delivered, cancelled or lost in transit) has nothing ahead of it.
  */
 @Component({
   selector: 'app-status-timeline',
@@ -25,10 +34,10 @@ const HAPPY_PATH: readonly OrderStatus[] = ['Submitted', 'Approved', 'Shipped', 
     <ol class="timeline" data-testid="timeline" aria-label="Status timeline">
       @for (p of points(); track p.status + p.state) {
         <li class="point" data-testid="timeline-point" [attr.data-status]="p.status" [attr.data-state]="p.state"
-            [attr.aria-current]="p.state === 'current' ? 'step' : null">
+            [attr.data-tone]="tone(p.status)" [attr.aria-current]="p.state === 'current' ? 'step' : null">
           <span class="marker" aria-hidden="true"></span>
           <div class="body">
-            <span class="label">{{ p.status }}</span>
+            <span class="label">{{ label(p.status) }}</span>
             @if (p.at) {
               <time class="when" [attr.datetime]="p.at">{{ p.at | date: 'd MMM y, HH:mm' }}</time>
             } @else {
@@ -66,21 +75,23 @@ const HAPPY_PATH: readonly OrderStatus[] = ['Submitted', 'Approved', 'Shipped', 
     .point[data-state='current'] .marker::after {
       content: ''; position: absolute; inset: 0.2rem; border-radius: 50%; background: var(--accent);
     }
-    .point[data-state='current'][data-status='Cancelled'] .marker { border-color: var(--danger); box-shadow: 0 0 0 4px rgba(185, 28, 28, 0.15); }
-    .point[data-state='current'][data-status='Cancelled'] .marker::after { background: var(--danger); }
-    .point[data-state='current'][data-status='Delivered'] .marker { border-color: var(--success-fg); box-shadow: 0 0 0 4px rgba(22, 101, 52, 0.15); }
-    .point[data-state='current'][data-status='Delivered'] .marker::after { background: var(--success-fg); }
+    .point[data-state='current'][data-tone='danger'] .marker { border-color: var(--danger); box-shadow: 0 0 0 4px rgba(185, 28, 28, 0.15); }
+    .point[data-state='current'][data-tone='danger'] .marker::after { background: var(--danger); }
+    .point[data-state='current'][data-tone='success'] .marker { border-color: var(--success-fg); box-shadow: 0 0 0 4px rgba(22, 101, 52, 0.15); }
+    .point[data-state='current'][data-tone='success'] .marker::after { background: var(--success-fg); }
     .body { display: flex; flex-direction: column; line-height: 1.3; min-width: 0; }
     .label { font-weight: 600; }
     .point[data-state='upcoming'] .label { color: var(--muted); font-weight: 500; }
     .point[data-state='current'] .label { color: var(--accent); }
-    .point[data-state='current'][data-status='Cancelled'] .label { color: var(--danger); }
-    .point[data-state='current'][data-status='Delivered'] .label { color: var(--success-fg); }
+    .point[data-state='current'][data-tone='danger'] .label { color: var(--danger); }
+    .point[data-state='current'][data-tone='success'] .label { color: var(--success-fg); }
     .when { font-size: 0.82rem; color: var(--muted); font-variant-numeric: tabular-nums; }
   `,
 })
 export class StatusTimeline {
   readonly order = input.required<Order>();
+  readonly label = statusLabel;
+  readonly tone = toneOf;
 
   readonly points = computed<TimelinePoint[]>(() => {
     const order = this.order();

@@ -6,5 +6,7 @@ public enum OrderStatus
     Approved,
     Shipped,
     Delivered,
-    Cancelled
+    Cancelled,
+    /// <summary>Shipped but never arrived. Terminal, like Delivered and Cancelled.</summary>
+    LostInTransit
 }

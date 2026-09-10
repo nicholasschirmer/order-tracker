@@ -118,7 +118,7 @@ Legend for the *Tested by* column: **B** = backend xUnit, **F** = frontend Vites
 * **Tested by:** B, E
 
 ### S16 — Illegal status transition is rejected
-* **Given** an order in `Delivered` (or `Cancelled`)
+* **Given** an order in a terminal status (`Delivered`, `Cancelled` or `LostInTransit`)
 * **When** any further transition is attempted, or `Submitted → Shipped` is attempted
 * **Then** `422 Unprocessable Entity` with a Problem Details body naming the current and
   requested status, and the order is unchanged
@@ -149,7 +149,18 @@ Legend for the *Tested by* column: **B** = backend xUnit, **F** = frontend Vites
   matches `status`/`updatedAt`; rejected transitions add nothing
 * **And** the UI detail page shows a timeline with a point per status: past points ticked with
   their time, the current point highlighted, and the remaining happy-path steps (here `Delivered`)
-  shown as pending. `Delivered` and `Cancelled` orders show no pending steps
+  shown as pending. Terminal orders (`Delivered`, `Cancelled`, `LostInTransit`) show no pending steps
+* **Tested by:** B, F, E
+
+### S23 — Mark a shipped order lost in transit
+* **Given** an order in `Shipped`
+* **When** `PATCH /api/orders/{id}/status` with `{ "status": "LostInTransit" }`
+* **Then** `200`, status `LostInTransit`, `allowedTransitions` is empty and every further
+  transition returns `422`. `LostInTransit` is rejected with `422` from any status other than
+  `Shipped`. `GET /api/orders?status=LostInTransit` filters to such orders
+* **And** the UI detail page for a shipped order offers **Mark delivered** and a destructive
+  **Mark lost in transit** button; after clicking, the badge reads "Lost in transit", the timeline
+  ends on a red terminal point and no actions remain. The list filter lists "Lost in transit"
 * **Tested by:** B, F, E
 
 ---
@@ -196,6 +207,7 @@ Legend for the *Tested by* column: **B** = backend xUnit, **F** = frontend Vites
 | S20 | `OrdersApiTests.S20_*` | — | `01-empty-state.spec.ts › S20` |
 | S21 | — | — | `layout.spec.ts` (6 tests: 3 screens × 2 viewports) |
 | S22 | `OrderTests.S22_*` (×3), `OrdersApiTests.S22_*` (×2), `DataSeederTests` | `order-detail.spec.ts` (×4) | `orders.spec.ts › S14, S15, S17` |
+| S23 | `OrderTests.S23_*`, `OrderTests.S14_S17_*`/`S16_*` rows, `OrdersApiTests.S23_*` (×2), `OrdersApiTests.S16_*` row | `order-detail.spec.ts` (×2), `status-badge.spec.ts`, `order-list.spec.ts` | `orders.spec.ts › S23` |
 
 Backend tests: `backend/tests/OrderTracker.Api.Tests/{Domain/OrderTests.cs, Api/OrdersApiTests.cs,
 Services/OrderServiceDuplicateTests.cs, Data/DataSeederTests.cs}`.

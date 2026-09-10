@@ -7,9 +7,10 @@ public class Order
         {
             [OrderStatus.Submitted] = [OrderStatus.Approved, OrderStatus.Cancelled],
             [OrderStatus.Approved] = [OrderStatus.Shipped, OrderStatus.Cancelled],
-            [OrderStatus.Shipped] = [OrderStatus.Delivered],
+            [OrderStatus.Shipped] = [OrderStatus.Delivered, OrderStatus.LostInTransit],
             [OrderStatus.Delivered] = [],
             [OrderStatus.Cancelled] = [],
+            [OrderStatus.LostInTransit] = [],
         };
 
     public Guid Id { get; private set; }

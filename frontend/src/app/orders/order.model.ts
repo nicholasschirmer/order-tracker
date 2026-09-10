@@ -1,6 +1,6 @@
 /** Mirrors backend/src/OrderTracker.Api/Contracts. */
 
-export type OrderStatus = 'Submitted' | 'Approved' | 'Shipped' | 'Delivered' | 'Cancelled';
+export type OrderStatus = 'Submitted' | 'Approved' | 'Shipped' | 'Delivered' | 'Cancelled' | 'LostInTransit';
 
 export const ORDER_STATUSES: readonly OrderStatus[] = [
   'Submitted',
@@ -8,6 +8,7 @@ export const ORDER_STATUSES: readonly OrderStatus[] = [
   'Shipped',
   'Delivered',
   'Cancelled',
+  'LostInTransit',
 ];
 
 export interface OrderLine {

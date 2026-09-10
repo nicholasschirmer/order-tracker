@@ -6,7 +6,7 @@ import { OrderService } from '../order.service';
 import { Order, OrderStatus } from '../order.model';
 import { StatusBadge } from '../shared/status-badge';
 import { StatusTimeline } from '../shared/status-timeline';
-import { TRANSITION_LABELS } from '../shared/status-labels';
+import { DESTRUCTIVE_STATUSES, statusLabel, TRANSITION_LABELS } from '../shared/status-labels';
 
 interface Notice {
   kind: 'success' | 'info';
@@ -44,6 +44,7 @@ export class OrderDetail {
   readonly banner = linkedSignal<Notice | null>(() => (this.notice() ? NOTICES[this.notice()!] ?? null : null));
 
   readonly labels = TRANSITION_LABELS;
+  readonly statusLabel = statusLabel;
 
   constructor() {
     effect(() => this.load(this.id()));
@@ -79,7 +80,7 @@ export class OrderDetail {
       next: (updated) => {
         this.order.set(updated);
         this.updating.set(null);
-        this.banner.set({ kind: 'success', text: `Status changed to ${updated.status}.` });
+        this.banner.set({ kind: 'success', text: `Status changed to ${statusLabel(updated.status)}.` });
       },
       error: (err: HttpErrorResponse) => {
         this.updating.set(null);
@@ -89,6 +90,6 @@ export class OrderDetail {
   }
 
   isDestructive(status: OrderStatus): boolean {
-    return status === 'Cancelled';
+    return DESTRUCTIVE_STATUSES.includes(status);
   }
 }

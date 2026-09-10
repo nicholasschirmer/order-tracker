@@ -81,6 +81,54 @@ describe('OrderDetail', () => {
     expect(el().querySelector('[data-testid="transition-Shipped"]')).toBeNull();
   });
 
+  it('S23 a shipped order offers "Mark delivered" and a destructive "Mark lost in transit"', async () => {
+    await create('abc');
+    http
+      .expectOne({ url: '/api/orders/abc', method: 'GET' })
+      .flush(sampleOrder({ id: 'abc', status: 'Shipped', allowedTransitions: ['Delivered', 'LostInTransit'] }));
+    fixture.detectChanges();
+
+    expect(transitionButtons()).toEqual(['Mark delivered', 'Mark lost in transit']);
+    const lost = el().querySelector<HTMLButtonElement>('[data-testid="transition-LostInTransit"]')!;
+    expect(lost.classList.contains('btn-danger')).toBe(true);
+    expect(el().querySelector('[data-testid="transition-Delivered"]')?.classList.contains('btn-primary')).toBe(true);
+  });
+
+  it('S23 marking an order lost in transit PATCHes LostInTransit and renders the terminal state', async () => {
+    await create('abc');
+    http
+      .expectOne({ url: '/api/orders/abc', method: 'GET' })
+      .flush(sampleOrder({ id: 'abc', status: 'Shipped', allowedTransitions: ['Delivered', 'LostInTransit'] }));
+    fixture.detectChanges();
+
+    el().querySelector<HTMLButtonElement>('[data-testid="transition-LostInTransit"]')!.click();
+    fixture.detectChanges();
+    const patch = http.expectOne({ method: 'PATCH', url: '/api/orders/abc/status' });
+    expect(patch.request.body).toEqual({ status: 'LostInTransit' });
+    patch.flush(
+      sampleOrder({
+        id: 'abc',
+        status: 'LostInTransit',
+        allowedTransitions: [],
+        statusHistory: [
+          { status: 'Submitted', changedAt: '2026-09-10T09:00:00+00:00' },
+          { status: 'Approved', changedAt: '2026-09-10T10:00:00+00:00' },
+          { status: 'Shipped', changedAt: '2026-09-11T08:00:00+00:00' },
+          { status: 'LostInTransit', changedAt: '2026-09-20T08:00:00+00:00' },
+        ],
+      }),
+    );
+    fixture.detectChanges();
+
+    expect(text('status-badge')).toBe('Lost in transit');
+    expect(el().querySelector('[data-testid="status-badge"]')?.getAttribute('data-status')).toBe('LostInTransit');
+    expect(transitionButtons()).toEqual([]);
+    expect(el().querySelector('[data-testid="terminal-note"]')?.textContent).toMatch(/lost in transit/i);
+    expect(el().querySelector('[data-testid="notice"]')?.textContent).toMatch(/status changed to lost in transit/i);
+    expect(pointSummary()).toEqual(['Submitted:done', 'Approved:done', 'Shipped:done', 'LostInTransit:current']);
+    expect(points().at(-1)?.textContent).toContain('Lost in transit');
+  });
+
   it('S16 shows a terminal message and no buttons for Delivered orders', async () => {
     await create('abc');
     http

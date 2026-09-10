@@ -332,6 +332,7 @@ public sealed class OrdersApiTests : IDisposable
     [InlineData("Shipped")]
     [InlineData("Delivered")]
     [InlineData("Submitted")]
+    [InlineData("LostInTransit")]
     public async Task S16_Illegal_transition_from_Submitted_returns_422_and_leaves_order_unchanged(string target)
     {
         var created = await CreateOrder(Acme());
@@ -377,6 +378,42 @@ public sealed class OrdersApiTests : IDisposable
 
         var again = await PatchStatus(created.Id, "Approved");
         Assert.Equal(HttpStatusCode.UnprocessableEntity, again.StatusCode);
+    }
+
+    [Fact]
+    public async Task S23_Shipped_order_can_be_marked_LostInTransit_and_becomes_terminal()
+    {
+        var created = await CreateOrder(Acme());
+        await PatchStatus(created.Id, "Approved");
+        // Only a shipped order can go missing.
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, (await PatchStatus(created.Id, "LostInTransit")).StatusCode);
+        var shipped = (await (await PatchStatus(created.Id, "Shipped")).Content.ReadFromJsonAsync<OrderResponse>())!;
+        Assert.Equal(["Delivered", "LostInTransit"], shipped.AllowedTransitions);
+
+        var response = await PatchStatus(created.Id, "LostInTransit");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var lost = await response.Content.ReadFromJsonAsync<OrderResponse>();
+        Assert.Equal("LostInTransit", lost!.Status);
+        Assert.Empty(lost.AllowedTransitions);
+        Assert.Equal(["Submitted", "Approved", "Shipped", "LostInTransit"], lost.StatusHistory.Select(h => h.Status));
+
+        foreach (var target in new[] { "Shipped", "Delivered", "Cancelled", "Submitted" })
+        {
+            Assert.Equal(HttpStatusCode.UnprocessableEntity, (await PatchStatus(created.Id, target)).StatusCode);
+        }
+    }
+
+    [Fact]
+    public async Task S23_List_can_filter_LostInTransit()
+    {
+        var a = await CreateOrder(Acme("PO-1"));
+        await CreateOrder(Acme("PO-2"));
+        foreach (var step in new[] { "Approved", "Shipped", "LostInTransit" }) await PatchStatus(a.Id, step);
+
+        var lost = await _client.GetFromJsonAsync<List<OrderResponse>>("/api/orders?status=lostintransit");
+
+        Assert.Equal([a.Id], lost!.Select(o => o.Id));
     }
 
     [Fact]

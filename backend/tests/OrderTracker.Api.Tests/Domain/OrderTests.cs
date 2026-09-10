@@ -42,6 +42,7 @@ public class OrderTests
     [InlineData(OrderStatus.Approved, OrderStatus.Shipped)]
     [InlineData(OrderStatus.Approved, OrderStatus.Cancelled)]
     [InlineData(OrderStatus.Shipped, OrderStatus.Delivered)]
+    [InlineData(OrderStatus.Shipped, OrderStatus.LostInTransit)]
     public void S14_S17_Legal_transitions_succeed_and_bump_UpdatedAt(OrderStatus from, OrderStatus to)
     {
         var order = NewOrder();
@@ -66,6 +67,12 @@ public class OrderTests
     [InlineData(OrderStatus.Delivered, OrderStatus.Cancelled)]
     [InlineData(OrderStatus.Cancelled, OrderStatus.Submitted)]
     [InlineData(OrderStatus.Cancelled, OrderStatus.Approved)]
+    [InlineData(OrderStatus.Submitted, OrderStatus.LostInTransit)]
+    [InlineData(OrderStatus.Approved, OrderStatus.LostInTransit)]
+    [InlineData(OrderStatus.Delivered, OrderStatus.LostInTransit)]
+    [InlineData(OrderStatus.LostInTransit, OrderStatus.Shipped)]
+    [InlineData(OrderStatus.LostInTransit, OrderStatus.Delivered)]
+    [InlineData(OrderStatus.LostInTransit, OrderStatus.Cancelled)]
     public void S16_Illegal_transitions_throw_and_leave_order_unchanged(OrderStatus from, OrderStatus to)
     {
         var order = NewOrder();
@@ -90,7 +97,7 @@ public class OrderTests
         Assert.Equal([OrderStatus.Shipped, OrderStatus.Cancelled], order.AllowedTransitions());
 
         Advance(order, OrderStatus.Shipped);
-        Assert.Equal([OrderStatus.Delivered], order.AllowedTransitions());
+        Assert.Equal([OrderStatus.Delivered, OrderStatus.LostInTransit], order.AllowedTransitions());
 
         Advance(order, OrderStatus.Delivered);
         Assert.Empty(order.AllowedTransitions());
@@ -104,6 +111,19 @@ public class OrderTests
 
         Assert.Empty(order.AllowedTransitions());
         Assert.Throws<InvalidStatusTransitionException>(() => order.TransitionTo(OrderStatus.Approved, T0.AddMinutes(2)));
+    }
+
+    [Fact]
+    public void S23_Shipped_order_can_be_marked_lost_in_transit_and_is_then_terminal()
+    {
+        var order = NewOrder();
+        Advance(order, OrderStatus.Shipped);
+
+        order.TransitionTo(OrderStatus.LostInTransit, T0.AddDays(3));
+
+        Assert.Equal(OrderStatus.LostInTransit, order.Status);
+        Assert.Empty(order.AllowedTransitions());
+        Assert.Equal(OrderStatus.LostInTransit, order.StatusHistory.Last().Status);
     }
 
     [Theory]
@@ -168,18 +188,23 @@ public class OrderTests
         Assert.Single(order.StatusHistory);
     }
 
-    /// <summary>Walks the order along the happy path until it reaches <paramref name="target"/>.</summary>
+    /// <summary>The legal route from <c>Submitted</c> to each status, used to put an order into a given state.</summary>
+    private static readonly Dictionary<OrderStatus, OrderStatus[]> PathTo = new()
+    {
+        [OrderStatus.Submitted] = [],
+        [OrderStatus.Approved] = [OrderStatus.Approved],
+        [OrderStatus.Shipped] = [OrderStatus.Approved, OrderStatus.Shipped],
+        [OrderStatus.Delivered] = [OrderStatus.Approved, OrderStatus.Shipped, OrderStatus.Delivered],
+        [OrderStatus.Cancelled] = [OrderStatus.Cancelled],
+        [OrderStatus.LostInTransit] = [OrderStatus.Approved, OrderStatus.Shipped, OrderStatus.LostInTransit],
+    };
+
+    /// <summary>Walks the order along its legal route until it reaches <paramref name="target"/>, skipping steps already taken.</summary>
     private static void Advance(Order order, OrderStatus target)
     {
-        var path = new[] { OrderStatus.Submitted, OrderStatus.Approved, OrderStatus.Shipped, OrderStatus.Delivered };
-        if (target == OrderStatus.Cancelled)
+        var visited = order.StatusHistory.Select(h => h.Status).ToHashSet();
+        foreach (var step in PathTo[target].Where(s => !visited.Contains(s)))
         {
-            order.TransitionTo(OrderStatus.Cancelled, T0);
-            return;
-        }
-        foreach (var step in path.SkipWhile(s => s != order.Status).Skip(1))
-        {
-            if (order.Status == target) break;
             order.TransitionTo(step, T0);
         }
     }

@@ -29,7 +29,7 @@ Order
   Id               Guid            server-generated
   ClientReference  string(64)      required, unique (case-insensitive, trimmed)
   CustomerName     string(200)     required
-  Status           OrderStatus     Submitted | Approved | Shipped | Delivered | Cancelled
+  Status           OrderStatus     Submitted | Approved | Shipped | Delivered | Cancelled | LostInTransit
   CreatedAt        DateTimeOffset  UTC
   UpdatedAt        DateTimeOffset  UTC
   Lines            OrderLine[]     at least one
