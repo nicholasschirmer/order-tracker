@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.angular/
+e2e/
+test-results/
+playwright-report/
+blob-report/
+playwright.config.ts
+proxy.conf.json
+.vscode/
+README.md

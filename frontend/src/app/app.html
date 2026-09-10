@@ -1,0 +1,15 @@
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" routerLink="/orders">
+      <span class="brand-mark" aria-hidden="true">OT</span>
+      <span>Order Tracker</span>
+    </a>
+    <nav aria-label="Primary">
+      <a routerLink="/orders" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Orders</a>
+      <a routerLink="/orders/new" routerLinkActive="active">New order</a>
+    </nav>
+  </div>
+</header>
+<main class="content">
+  <router-outlet />
+</main>

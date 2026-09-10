@@ -1,0 +1,23 @@
+# .NET
+bin/
+obj/
+*.db
+*.db-wal
+*.db-shm
+TestResults/
+
+# Node / Angular
+node_modules/
+dist/
+.angular/
+/frontend/test-results/
+/frontend/playwright-report/
+/frontend/blob-report/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+frontend/e2e/.tmp/
+.dev/
+docker-compose.override.yml

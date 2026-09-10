@@ -1,0 +1,88 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Orders</h1>
+      <p class="muted">Everything the team has submitted, newest first.</p>
+    </div>
+  </header>
+
+  <form class="toolbar card" (submit)="onSearchSubmit($event)" role="search">
+    <label class="field field-inline">
+      <span>Search</span>
+      <input
+        type="search"
+        data-testid="search"
+        placeholder="Reference or customer"
+        [value]="search()"
+        (input)="onSearchInput($any($event.target).value)"
+      />
+    </label>
+    <label class="field field-inline">
+      <span>Status</span>
+      <select data-testid="status-filter" [value]="status()" (change)="onStatusChange($any($event.target).value)">
+        <option value="">All statuses</option>
+        @for (s of statuses; track s) {
+          <option [value]="s">{{ s }}</option>
+        }
+      </select>
+    </label>
+    <button type="submit" class="btn btn-secondary">Apply</button>
+    @if (filtered()) {
+      <button type="button" class="btn btn-link" (click)="clearFilters()" data-testid="clear-filters">Clear</button>
+    }
+  </form>
+
+  @if (error()) {
+    <div class="banner banner-error" role="alert" data-testid="error-banner">
+      {{ error() }}
+      <button type="button" class="btn btn-link" (click)="load()">Retry</button>
+    </div>
+  }
+
+  @if (loading()) {
+    <p class="muted" data-testid="loading" aria-live="polite">Loading orders…</p>
+  } @else if (!error()) {
+    @if (orders().length === 0) {
+      <div class="empty card" data-testid="empty-state">
+        @if (filtered()) {
+          <h2>No orders match your filter</h2>
+          <p class="muted">Try a different status or search term, or <a routerLink="/orders/new">create a new order</a>.</p>
+        } @else {
+          <h2>No orders yet</h2>
+          <p class="muted">Orders submitted by the team will show up here.</p>
+          <a class="btn btn-primary" routerLink="/orders/new">Create the first order</a>
+        }
+      </div>
+    } @else {
+      <div class="card table-wrap">
+        <table class="orders">
+          <thead>
+            <tr>
+              <th scope="col">Reference</th>
+              <th scope="col">Customer</th>
+              <th scope="col" class="num">Lines</th>
+              <th scope="col" class="num">Total</th>
+              <th scope="col">Status</th>
+              <th scope="col">Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (order of orders(); track order.id) {
+              <tr data-testid="order-row">
+                <td data-label="Reference">
+                  <a class="ref" [routerLink]="['/orders', order.id]" data-testid="order-link">{{ order.clientReference }}</a>
+                </td>
+                <td data-label="Customer">{{ order.customerName }}</td>
+                <td class="num" data-label="Lines">{{ order.lines.length }}</td>
+                <td class="num" data-label="Total">{{ order.total | number: '1.2-2' }}</td>
+                <td data-label="Status"><app-status-badge [status]="order.status" /></td>
+                <td class="muted nowrap" data-label="Created">{{ order.createdAt | date: 'd MMM y, HH:mm' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="muted count" data-testid="count">{{ orders().length }} order{{ orders().length === 1 ? '' : 's' }}</p>
+    }
+  }
+</section>

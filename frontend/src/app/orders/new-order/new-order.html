@@ -1,0 +1,119 @@
+<section class="page page-narrow">
+  <header class="page-header">
+    <div>
+      <a class="back" routerLink="/orders">← Orders</a>
+      <h1>New order</h1>
+      <p class="muted">
+        Use the customer's purchase-order reference. If the same reference is submitted twice with the same details,
+        the original order is shown instead of creating a duplicate.
+      </p>
+    </div>
+  </header>
+
+  @if (conflict(); as problem) {
+    <div class="banner banner-error" role="alert" data-testid="error-banner">
+      <strong>Reference {{ problem.clientReference ?? 'already' }} is already in use.</strong>
+      {{ problem.detail ?? 'It was submitted earlier with different details.' }}
+      @if (problem.existingOrderId) {
+        <a [routerLink]="['/orders', problem.existingOrderId]">View the existing order</a>
+      }
+    </div>
+  } @else if (error()) {
+    <div class="banner banner-error" role="alert" data-testid="error-banner">{{ error() }}</div>
+  }
+
+  <form class="card form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <div class="grid-2">
+      <div class="field">
+        <label for="clientReference">Client reference</label>
+        <input
+          id="clientReference"
+          type="text"
+          formControlName="clientReference"
+          placeholder="e.g. PO-2026-0001"
+          maxlength="64"
+          autocomplete="off"
+          [attr.aria-invalid]="errorFor(form.controls.clientReference, 'Client reference') ? true : null"
+        />
+        @if (errorFor(form.controls.clientReference, 'Client reference'); as msg) {
+          <p class="field-error">{{ msg }}</p>
+        }
+      </div>
+      <div class="field">
+        <label for="customerName">Customer</label>
+        <input
+          id="customerName"
+          type="text"
+          formControlName="customerName"
+          placeholder="e.g. Acme Ltd"
+          maxlength="200"
+          autocomplete="organization"
+          [attr.aria-invalid]="errorFor(form.controls.customerName, 'Customer name') ? true : null"
+        />
+        @if (errorFor(form.controls.customerName, 'Customer name'); as msg) {
+          <p class="field-error">{{ msg }}</p>
+        }
+      </div>
+    </div>
+
+    <fieldset class="lines" formArrayName="lines">
+      <legend>Line items</legend>
+      <div class="line-head" aria-hidden="true">
+        <span>Product</span><span class="num">Qty</span><span class="num">Unit price</span><span class="num">Line total</span><span></span>
+      </div>
+      @for (line of lines.controls; track line; let i = $index) {
+        <div class="line-row" [formGroupName]="i" data-testid="line-row">
+          <div class="field">
+            <label class="sr-only" [for]="'product-' + i">Product</label>
+            <input [id]="'product-' + i" type="text" formControlName="product" placeholder="Product" data-testid="line-product" />
+            @if (errorFor(line.controls.product, 'Product'); as msg) {
+              <p class="field-error">{{ msg }}</p>
+            }
+          </div>
+          <div class="field">
+            <label class="sr-only" [for]="'quantity-' + i">Quantity</label>
+            <input [id]="'quantity-' + i" type="number" min="1" step="1" formControlName="quantity" data-testid="line-quantity" class="num" />
+            @if (errorFor(line.controls.quantity, 'Quantity'); as msg) {
+              <p class="field-error">{{ msg }}</p>
+            }
+          </div>
+          <div class="field">
+            <label class="sr-only" [for]="'unitPrice-' + i">Unit price</label>
+            <input [id]="'unitPrice-' + i" type="number" min="0" step="0.01" formControlName="unitPrice" placeholder="0.00" data-testid="line-unit-price" class="num" />
+            @if (errorFor(line.controls.unitPrice, 'Unit price'); as msg) {
+              <p class="field-error">{{ msg }}</p>
+            }
+          </div>
+          <div class="line-total num" data-testid="line-total">
+            {{ lineTotal(line) | number: '1.2-2' }}
+          </div>
+          <button
+            type="button"
+            class="btn btn-icon"
+            (click)="removeLine(i)"
+            [disabled]="lines.length === 1"
+            data-testid="remove-line"
+            aria-label="Remove line"
+            title="Remove line"
+          >
+            ✕
+          </button>
+        </div>
+      }
+      <button type="button" class="btn btn-secondary" (click)="addLine()" data-testid="add-line">+ Add line</button>
+    </fieldset>
+
+    <footer class="form-footer">
+      <div class="total">
+        <span class="muted">Order total</span>
+        <strong data-testid="running-total">{{ runningTotal() | number: '1.2-2' }}</strong>
+      </div>
+      <div class="actions">
+        <a class="btn btn-secondary" routerLink="/orders">Cancel</a>
+        <button type="submit" class="btn btn-primary" [disabled]="form.invalid || submitting()" data-testid="submit">
+          {{ submitting() ? 'Submitting…' : 'Submit order' }}
+        </button>
+      </div>
+    </footer>
+  </form>
+</section>

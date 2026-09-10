@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <!-- Arch Linux's dotnet-sdk package ships without the ASP.NET Core prune-package data;
+         allow restore to proceed and pull the targeting pack from NuGet instead. -->
+    <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+</Project>

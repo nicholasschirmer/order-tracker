@@ -1,0 +1,20 @@
+.eyebrow { margin: 0; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.page-header h1 { margin: 0.1rem 0 0.25rem; }
+.big { font-size: 1.05rem; }
+
+.grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr); gap: 1rem; align-items: start; }
+@media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+
+.lines { width: 100%; border-collapse: collapse; }
+.lines th, .lines td { padding: 0.65rem 0.9rem; text-align: left; border-bottom: 1px solid var(--border); }
+.lines thead th { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); background: var(--surface-alt); }
+.lines tfoot th, .lines tfoot td { border-bottom: 0; border-top: 2px solid var(--border); font-weight: 600; }
+.lines .num { text-align: right; font-variant-numeric: tabular-nums; }
+.lines .total { font-size: 1.1rem; }
+
+.side { padding: 1rem 1.25rem; }
+.side h2 { margin: 0 0 0.75rem; font-size: 1rem; }
+.order-id { margin: 1rem 0; font-size: 0.8rem; overflow-wrap: anywhere; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem; }
+.actions { display: flex; flex-wrap: wrap; gap: 0.5rem; padding-top: 0.9rem; border-top: 1px solid var(--border); }
+.side .muted[data-testid='terminal-note'] { padding-top: 0.9rem; border-top: 1px solid var(--border); }

@@ -1,0 +1,90 @@
+<section class="page page-narrow">
+  <a class="back" routerLink="/orders" data-testid="back-link">← Orders</a>
+
+  @if (banner(); as n) {
+    <div class="banner" [class.banner-success]="n.kind === 'success'" [class.banner-info]="n.kind === 'info'" role="status" data-testid="notice" [attr.data-kind]="n.kind">
+      {{ n.text }}
+    </div>
+  }
+
+  @if (error()) {
+    <div class="banner banner-error" role="alert" data-testid="error-banner">
+      {{ error() }}
+      @if (notFound()) {
+        <a routerLink="/orders">Back to all orders</a>
+      }
+    </div>
+  }
+
+  @if (loading()) {
+    <p class="muted" data-testid="loading">Loading order…</p>
+  } @else if (order(); as o) {
+    <header class="page-header">
+      <div>
+        <p class="eyebrow">Client reference</p>
+        <h1 data-testid="detail-reference">{{ o.clientReference }}</h1>
+        <p class="muted">
+          for <strong data-testid="detail-customer">{{ o.customerName }}</strong>
+        </p>
+      </div>
+      <app-status-badge class="big" [status]="o.status" />
+    </header>
+
+    <div class="grid">
+      <div class="card table-wrap">
+        <table class="lines">
+          <thead>
+            <tr>
+              <th scope="col">Product</th>
+              <th scope="col" class="num">Qty</th>
+              <th scope="col" class="num">Unit price</th>
+              <th scope="col" class="num">Line total</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (line of o.lines; track $index) {
+              <tr data-testid="line-row">
+                <td>{{ line.product }}</td>
+                <td class="num">{{ line.quantity }}</td>
+                <td class="num">{{ line.unitPrice | number: '1.2-2' }}</td>
+                <td class="num">{{ line.lineTotal | number: '1.2-2' }}</td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr>
+              <th scope="row" colspan="3">Order total</th>
+              <td class="num total" data-testid="detail-total">{{ o.total | number: '1.2-2' }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <aside class="card side">
+        <h2>Status timeline</h2>
+        <app-status-timeline [order]="o" />
+        <p class="order-id muted">Order id <span class="mono">{{ o.id }}</span></p>
+
+        @if (o.allowedTransitions.length > 0) {
+          <div class="actions">
+            @for (next of o.allowedTransitions; track next) {
+              <button
+                type="button"
+                class="btn"
+                [class.btn-primary]="!isDestructive(next)"
+                [class.btn-danger]="isDestructive(next)"
+                [disabled]="updating() !== null"
+                (click)="transition(next)"
+                [attr.data-testid]="'transition-' + next"
+              >
+                {{ updating() === next ? 'Saving…' : labels[next] }}
+              </button>
+            }
+          </div>
+        } @else {
+          <p class="muted" data-testid="terminal-note">This order is {{ o.status.toLowerCase() }}; no further changes are possible.</p>
+        }
+      </aside>
+    </div>
+  }
+</section>
